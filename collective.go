@@ -16,7 +16,7 @@ func NewCollective(todoList []string) (*Collective, error) {
 		return nil, err
 	}
 
-	alice, err := NewAgent("Alice", "Developer", "mixtral", false, "develop the best source code the world has ever seen")
+	alice, err := NewAgent("Alice", "Developer", "llama3", false, "develop the best source code the world has ever seen")
 	if err != nil {
 		return nil, err
 	}
