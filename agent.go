@@ -63,7 +63,7 @@ func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
 	archiveLastEmail()
 	`
 
-	prompt1 := fmt.Sprintf("%s, it is time to work. This describes you: %s. Your current task is: %s. The tools at your disposal that you can call as if they were Lua functions are: %s. \nWrite the Lua code that calls one of these tools, and I will return the response to you. The goal is to complete the task, or at least try to complete the task in up to three different ways. If you know the answer and do not need the tools, then just output the answer.", a.Name, a.Description, currentTask, currentTools)
+	prompt1 := fmt.Sprintf("%s, it is time to work. This describes you: %s Your current task is: %s The tools at your disposal that you can call as if they were Lua functions are: %s. \nWrite the Lua code that calls one of these tools, and I will return the response to you. The goal is to complete the task, or at least try to complete the task in up to three different ways. If you know the answer and do not need the tools, then just output the answer.", a.Name, a.Description, currentTask, currentTools)
 
 	fmt.Printf("Prompt for %s: %s.\n", a.Name, prompt1)
 
