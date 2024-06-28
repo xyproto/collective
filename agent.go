@@ -17,6 +17,7 @@ type Agent struct {
 	Purpose     string
 	Brain       *ollamaclient.Config
 	Workers     Agents
+	Memory      []string
 }
 
 func NewAgent(name, description, modelName string, creative bool, purpose string) (*Agent, error) {
@@ -40,14 +41,21 @@ func NewAgent(name, description, modelName string, creative bool, purpose string
 	}, nil
 }
 
-// Yes or no accepts a "yes/no" question and returns true if the Agent believes that the answer is "yes".
+// YesOrNoWithoutContext accepts a "yes/no" question and returns true if the Agent believes that the answer is "yes".
 // If there are errors, or the answer is no or something else, the function returns false.
-func (a *Agent) YesOrNo(question string) bool {
+func (a *Agent) YesOrNoWithoutContext(question string) bool {
 	answer, err := a.Brain.GetOutput(question + "\nAnswer either YES or NO. Only answer very briefly: YES or NO.")
 	if err != nil {
 		return false
 	}
 	return strings.Contains(strings.ToLower(answer), "yes")
+}
+
+// YesOrNo accepts a "yes/no" question and returns true if the Agent believes that the answer is "yes".
+// If there are errors, or the answer is no or something else, the function returns false.
+func (a *Agent) YesOrNo(question string) bool {
+	lowercaseAnswer := strings.ToLower(a.Ask(question + "\nAnswer either YES or NO. Only answer very briefly: YES or NO."))
+	return strings.Contains(lowercaseAnswer, "yes")
 }
 
 // AskWithoutContext this agent a question without context.
@@ -57,6 +65,31 @@ func (a *Agent) AskWithoutContext(question string) string {
 	if err != nil {
 		return err.Error()
 	}
+	return answer
+}
+
+// Ask this agent a question, with context/memory.
+// Returns the error as a string if something went wrong in the "brain".
+func (a *Agent) Ask(question string) string {
+	var answer string
+	var err error
+	if len(a.Memory) > 0 {
+		const memoryEntriesUsedInPrompt = 100
+		firstIndex := 0
+		lastIndex := len(a.Memory) - 1
+		if lastIndex > memoryEntriesUsedInPrompt {
+			firstIndex = lastIndex - memoryEntriesUsedInPrompt
+		}
+		context := strings.Join(a.Memory[firstIndex:lastIndex], "\n")
+		answer, err = a.Brain.GetOutput("This is the conversation up until now:\n```\n" + context + "\n```\n\n" + question)
+	} else {
+		answer, err = a.Brain.GetOutput(question)
+	}
+	if err != nil {
+		return err.Error()
+	}
+	a.Memory = append(a.Memory, question)
+	a.Memory = append(a.Memory, answer)
 	return answer
 }
 
@@ -88,10 +121,7 @@ func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
 
 	fmt.Printf("Prompt for %s: %s.\n", a.Name, prompt1)
 
-	action1, err := a.Brain.GetOutput(prompt1)
-	if err != nil {
-		return err
-	}
+	action1 := a.Ask(prompt1)
 
 	fmt.Printf("Action from %s: %s.\n", a.Name, action1)
 
@@ -101,11 +131,7 @@ func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
 
 	fmt.Printf("Prompt for %s: %s.\n", a.Name, prompt2)
 
-	conclusion, err := a.Brain.GetOutput(prompt2)
-	if err != nil {
-		return err
-	}
-
+	conclusion := a.Ask(prompt2)
 	fmt.Printf("Conclusion from %s: %s.\n", a.Name, conclusion)
 
 	for {
