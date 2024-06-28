@@ -9,14 +9,15 @@ import (
 	"github.com/xyproto/ollamaclient/v2"
 )
 
+type Agents []*Agent
+
 type Agent struct {
 	Name        string
 	Description string
 	Purpose     string
 	Brain       *ollamaclient.Config
+	Workers     Agents
 }
-
-type Agents []*Agent
 
 func NewAgent(name, description, modelName string, creative bool, purpose string) (*Agent, error) {
 	oc := ollamaclient.New()
@@ -37,6 +38,26 @@ func NewAgent(name, description, modelName string, creative bool, purpose string
 		Purpose:     purpose,
 		Brain:       oc,
 	}, nil
+}
+
+// Yes or no accepts a "yes/no" question and returns true if the Agent believes that the answer is "yes".
+// If there are errors, or the answer is no or something else, the function returns false.
+func (a *Agent) YesOrNo(question string) bool {
+	answer, err := a.Brain.GetOutput(question + "\nAnswer either YES or NO. Only answer very briefly: YES or NO.")
+	if err != nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(answer), "yes")
+}
+
+// AskWithoutContext this agent a question without context.
+// Returns the error as a string if something went wrong in the "brain".
+func (a *Agent) AskWithoutContext(question string) string {
+	answer, err := a.Brain.GetOutput(question)
+	if err != nil {
+		return err.Error()
+	}
+	return answer
 }
 
 func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
