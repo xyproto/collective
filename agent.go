@@ -1,11 +1,9 @@
 package collective
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/xyproto/ask"
 	"github.com/xyproto/ollamaclient/v2"
 )
 
@@ -93,31 +91,16 @@ func (a *Agent) Ask(question string) string {
 	return answer
 }
 
-func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
-	var currentTask string
-	if len(*TODO) > 0 {
-		firstItem := (*TODO)[0]
-		currentTask = firstItem
-	} else {
-		return errors.New("no tasks to complete, ending call")
-	}
+func (a *Agent) Do(taskInstructions, taskContext string) error {
+	var sb strings.Builder
+	sb.WriteString(a.Name + ", it is time to work!\n")
+	sb.WriteString("This describes you: " + a.Description + "\n")
+	sb.WriteString("The context for the that you will be solving is: " + taskContext + "\n")
+	sb.WriteString("A Linux bash prompt and a Python REPL are at your disposal. Just prefix commands with LINUX: or PYTHON: and you will be given the output. This can be useful for all sorts of things.\n")
+	sb.WriteString("The task you will be solving is this: " + taskInstructions + "\n")
+	sb.WriteString("If the task is a question and you know the answer, just say the answer, prefixed with ANSWER:\n")
 
-	fmt.Println("Current task: " + currentTask)
-
-	currentTools := `
-	// This function searches Wikipedia and returns the first result, as a string
-	searchWikipedia(string) -> string
-	// This function searches Google and returns the first result, as a string
-	searchGoogle(string) -> string
-	// This function sends an e-mail, given an address, a subject and a body
-	sendEmail(string, string, string)
-	// This function returns the last received non-archived e-mail as a string, or an empty string if no e-mail is available
-	lastEmail() -> string
-	// This function archives the last received non-archived e-mail, or does nothing if no e-mail is available
-	archiveLastEmail()
-	`
-
-	prompt1 := fmt.Sprintf("%s, it is time to work. This describes you: %s Your current task is: %s The tools at your disposal that you can call as if they were Lua functions are: %s. \nWrite the Lua code that calls one of these tools, and I will return the response to you. The goal is to complete the task, or at least try to complete the task in up to three different ways. If you know the answer and do not need the tools, then just output the answer.", a.Name, a.Description, currentTask, currentTools)
+	prompt1 := sb.String()
 
 	fmt.Printf("Prompt for %s: %s.\n", a.Name, prompt1)
 
@@ -125,7 +108,7 @@ func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
 
 	fmt.Printf("Action from %s: %s.\n", a.Name, action1)
 
-	toolResult := ask.Ask("If the AI is attempting to call a tool, what should the response from the tool be? ")
+	toolResult := a.AskWithoutContext("You are a tool. You are being called with this code: " + action1 + "\nWhat is your reply?")
 
 	prompt2 := "The response from the tools are: " + toolResult + ". Do you want to call another function, or declare the task as complete? If it is complete, what is your conclusion or summary of the completed task?"
 
@@ -135,9 +118,9 @@ func (a *Agent) CallUpon(TODO *[]string, coWorkers Agents) error {
 	fmt.Printf("Conclusion from %s: %s.\n", a.Name, conclusion)
 
 	for {
-		callAnother := ask.Ask("Does the AI want to call another tool, given this text? Answer either YES or NO. Only answer YES or NO. " + conclusion)
-		if strings.Contains(strings.ToLower(callAnother), "yes") {
-			fmt.Println("TO IMPLEMENT")
+		callAnother := a.YesOrNoWithoutContext("Does the AI want to call another tool, given this text? Answer either YES or NO. Only answer YES or NO. " + conclusion)
+		if callAnother {
+			fmt.Println("TO IMPLEMENT: CALL ANOTHER")
 		} else {
 			fmt.Println("No more calling of tools. Ending this call.")
 			break

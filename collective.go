@@ -27,8 +27,9 @@ func NewCollective(todoList []string) (*Collective, error) {
 	}, nil
 }
 
-func (co *Collective) CallUpon() {
-	for _, agent := range co.Agents {
-		agent.CallUpon(&co.TODO, co.Agents)
-	}
-}
+// TODO: Do things smarter. Divide tasks based on agent skills. Let Agents delegate.
+//func (co *Collective) Do() {
+//for _, agent := range co.Agents {
+//agent.Do("just test&co.TODO, co.Agents)
+//}
+//}
