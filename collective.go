@@ -6,7 +6,7 @@ type Collective struct {
 }
 
 func NewCollective(todoList []string) (*Collective, error) {
-	frank, err := NewAgent("Frank", "CEO", "llama3", false, "be just, fair, display excellence and performance")
+	frank, err := NewAgent("Frank", "CEO", "gemma2", false, "be just, fair, display excellence and performance")
 	if err != nil {
 		return nil, err
 	}
